@@ -1,12 +1,50 @@
 # hapi-auth-jwt
 JWT Auth Hapi plugin
 
-// const HASH_KEY = require('crypto').randomBytes(256).toString('base64')
+
+You must define a logger has `server.app.logger` with at least `info` method
+
+You must register the `findUserByProvider` method in hapi server with server.method and specify the name used to register the method as value of `options.methods.findUserByProvider`
+
+`findUserByProvider` = async(provider, {email, userId}) => {}
+  If an user if found (and only 1), this method must return the user data object for jwt
+  If more than 1 user found, throw an error.
+  return null otherwise (or raise an error)
+
+Options example:
+```js
+{
+  methods: {
+    findUserByProvider: async(provider, {email, userId}) => {}, // return user data for jwt if found (and only 1 user for this provider. Throw an error if more than 1 user found), null otherwise
+  },
+  jwtExpirationValidator: {
+    cleanInterval: 5 * 60 * 1000, // ms
+  },
+  jwt: {
+    /// - hapi-auth-jwt2 options
+    key: 'JWT_HASH_SECRET_KEY',
+    // validate is automatically added
+    verifyOptions: {
+      ignoreExpiration: false,
+      algorithms: 'HS256',
+    },
+    urlKey: false,
+    cookieKey: false,
+    payloadKey: false,
+    headerKey: 'authorization', // we allow header only
+    tokenType: 'Bearer',
+
+    /// - custom attributs
+    issuer: 'BOILERPLATE',
+    duration: 15, // min
+  },
+}
+```
+
+To generate the hash key, you can use `require('crypto').randomBytes(256).toString('base64')`
 
 
-
-
-/*
+```
 1/ User appel /auth/login?username=toto&password=superpass
 2/ Le plugin se signe un token avec comme scope auth et fait une requête sur /user/auth?type=user_password&data={username: toto, password: superpass}
 3/ Le serveur répond par ex : {username: toto, scope: user, email: xxx, avatar: url}
@@ -29,4 +67,4 @@ Si tu mets une URL complète, genre https://domain.com/user/auth, dans ce cas c'
 C'est assez sexy comme approche.
 Comme ça, le plugin s'auto-optimise avec juste un petit test, c'est assez facile à mettre en place.
 
-*/
+```
